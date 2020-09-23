@@ -4,6 +4,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.SurfaceHolder
+
+import android.view.SurfaceHolder.Callback
 import android.view.SurfaceView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -44,7 +47,22 @@ class MainActivity : AppCompatActivity() {
             //creacion de camara
             cameraSource = CameraSource.Builder(this, barcodeDetector).build()
 
-            
+            //prepara el lector de qr
+            cameraSurfaceView?.holder?.addCallback(object: Callback{
+                override fun surfaceCreated(p0: SurfaceHolder) {
+                    TODO("Not yet implemented")
+                }
 
-    }
+                override fun surfaceChanged(p0: SurfaceHolder, p1: Int, p2: Int, p3: Int) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun surfaceDestroyed(p0: SurfaceHolder) {
+                    TODO("Not yet implemented")
+                }
+
+            })
+        }
+
+    
 }
