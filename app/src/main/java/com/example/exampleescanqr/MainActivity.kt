@@ -44,29 +44,42 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-            //texto con el resultado qr
-                qrResult = findViewById(R.id.qr_result)
+
             //vista de la camara
             cameraSurfaceView = findViewById(R.id.camera_view)
 
-            //creacion de lector qr
-            barcodeDetector = BarcodeDetector.Builder(this).setBarcodeFormats(Barcode.QR_CODE).build()
+        //creacion de lector qr
+        barcodeDetector = BarcodeDetector.Builder(this).setBarcodeFormats(Barcode.ALL_FORMATS).build()
+        barcodeDetector!!.setProcessor(object : Detector.Processor<Barcode> {
+            override fun release() {}
+
+            override fun receiveDetections(detections: Detections<Barcode>?) {
+                val barcodes = detections?.detectedItems
+
+                if (barcodes!!.size() > 0) {
+
+                    qr_result.post { Runnable {
+                        qr_result.text = barcodes.valueAt(0).displayValue.toString()
+                    }}
+                }
+                barcodeDetector?.release()
+            }
+
+        })
 
             //creacion de camara
-            cameraSource = CameraSource.Builder(this, barcodeDetector).build()
+            cameraSource = CameraSource.Builder(this, barcodeDetector).setRequestedPreviewSize(1920,1080).setRequestedFps(25f).setAutoFocusEnabled(true).build()
 
             //prepara el lector de qr
-            cameraSurfaceView?.holder?.addCallback(object: Callback{
+            cameraSurfaceView?.holder?.addCallback(object: SurfaceHolder.Callback2{
 
                 //verificar si existen los permisos dados
                 override fun surfaceCreated(holder: SurfaceHolder) {
                     if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                     {
-                        try {
-                            cameraSource?.start(cameraSurfaceView?.holder)
-                        }catch (e: IOException){
-                           Log.e("Error", e.message.toString())
-                        }
+                        cameraSource!!.start(holder)
+                    }else{
+                        Toast.makeText(this@MainActivity,"Los permisos no se han aceptado", Toast.LENGTH_LONG).show()
                     }
                 }
 
@@ -76,27 +89,13 @@ class MainActivity : AppCompatActivity() {
                     cameraSource?.stop()
                 }
 
-            })
-
-        barcodeDetector?.setProcessor(object : Detector.Processor<Barcode> {
-            override fun release() {}
-
-            override fun receiveDetections(detections: Detections<Barcode>?) {
-                val barcodes = detections?.detectedItems
-
-                if (barcodes!!.size() != 0){
-                    qr_result.post( Runnable {
-                            fun run () {
-                                qr_result.text = (barcodes.valueAt(0).displayValue.toString())
-                            }
-                    })
-
-                    barcodeDetector?.release()
+                override fun surfaceRedrawNeeded(holder: SurfaceHolder) {
 
                 }
-            }
 
-        })
+            })
+
+
 
 
     }
