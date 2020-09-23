@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ExampleEscanQR</string>
+    <string name="qr_escaneado">QR Escaneado</string>
+</resources>
