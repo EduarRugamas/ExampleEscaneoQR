@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">ExampleEscanQR</string>
-    <string name="qr_escaneado">QR Escaneado</string>
+    <string name="qr_escaneado">Resultado del QR </string>
 </resources>

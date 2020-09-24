@@ -6,12 +6,15 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.util.SparseArray
 import android.view.SurfaceHolder
 import android.view.SurfaceHolder.Callback
 import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.util.isNotEmpty
 import com.google.android.gms.vision.CameraSource
 import com.google.android.gms.vision.Detector
 import com.google.android.gms.vision.Detector.Detections
@@ -25,10 +28,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
 
     private val MY_PERMISSION_CAMERA: Int = 100
-    private var barcodeDetector : BarcodeDetector? = null
-    private var cameraSource : CameraSource? = null
-    private var cameraSurfaceView : SurfaceView? = null
-    private var qrResult: TextView? = null
+    private lateinit var detector : BarcodeDetector
+    private lateinit var cameraSource : CameraSource
+
+
 
 
 
@@ -43,59 +46,55 @@ class MainActivity : AppCompatActivity() {
                     requestPermissions(arrayOf(Manifest.permission.CAMERA), MY_PERMISSION_CAMERA)
             }
         }
+        setUpControl()
 
+    }
 
-            //vista de la camara
-            cameraSurfaceView = findViewById(R.id.camera_view)
+    private fun setUpControl(){
+        detector = BarcodeDetector.Builder(this).build()
+        cameraSource = CameraSource.Builder(this, detector).setRequestedPreviewSize(1920, 1080).setRequestedFps(25f).setAutoFocusEnabled(true).build()
 
-        //creacion de lector qr
-        barcodeDetector = BarcodeDetector.Builder(this).setBarcodeFormats(Barcode.ALL_FORMATS).build()
-        barcodeDetector!!.setProcessor(object : Detector.Processor<Barcode> {
-            override fun release() {}
+        camera_view.holder.addCallback(surfaceCallback)
+        detector.setProcessor(processor)
+    }
 
-            override fun receiveDetections(detections: Detections<Barcode>?) {
-                val barcodes = detections?.detectedItems
-
-                if (barcodes!!.size() > 0) {
-
-                    qr_result.post { Runnable {
-                        qr_result.text = barcodes.valueAt(0).displayValue.toString()
-                    }}
+    private val surfaceCallback = object : Callback{
+        override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
+            if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+                try {
+                    cameraSource.start(surfaceHolder)
+                }catch (exception: Exception){
+                    Toast.makeText(this@MainActivity, "Se necesitan permisos de camara", Toast.LENGTH_SHORT).show()
                 }
-                barcodeDetector?.release()
+                return
+            }
+        }
+
+        override fun surfaceChanged(p0: SurfaceHolder, p1: Int, p2: Int, p3: Int) {
+
+        }
+
+        override fun surfaceDestroyed(p0: SurfaceHolder) {
+            cameraSource.stop()
+        }
+
+    }
+
+    private val processor = object : Detector.Processor<Barcode>{
+        override fun release() {}
+
+        override fun receiveDetections(detections: Detections<Barcode>?) {
+
+            if (detections != null){
+                val qrCodes: SparseArray<Barcode> = detections.detectedItems
+                val code = qrCodes.valueAt(0)
+                qr_result.text = code.displayValue.toString()
+            }else{
+                Toast.makeText(this@MainActivity, "Codigo qr no leido", Toast.LENGTH_SHORT).show()
             }
 
-        })
 
-            //creacion de camara
-            cameraSource = CameraSource.Builder(this, barcodeDetector).setRequestedPreviewSize(1920,1080).setRequestedFps(25f).setAutoFocusEnabled(true).build()
-
-            //prepara el lector de qr
-            cameraSurfaceView?.holder?.addCallback(object: SurfaceHolder.Callback2{
-
-                //verificar si existen los permisos dados
-                override fun surfaceCreated(holder: SurfaceHolder) {
-                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
-                    {
-                        cameraSource!!.start(holder)
-                    }else{
-                        Toast.makeText(this@MainActivity,"Los permisos no se han aceptado", Toast.LENGTH_LONG).show()
-                    }
-                }
-
-                override fun surfaceChanged(holder: SurfaceHolder, p1: Int, p2: Int, p3: Int) {}
-
-                override fun surfaceDestroyed(holder: SurfaceHolder) {
-                    cameraSource?.stop()
-                }
-
-                override fun surfaceRedrawNeeded(holder: SurfaceHolder) {
-
-                }
-
-            })
-
-
+        }
 
 
     }
